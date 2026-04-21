@@ -1,5 +1,3 @@
-
-
 from __future__ import print_function
 
 import keras
@@ -46,6 +44,15 @@ with tf.device('/gpu:0'):
     class_names = train_ds.class_names
     print('Class Names: ',class_names)
     num_classes = len(class_names)
+
+    # code to check the distribution of classes
+    distribution = {name: 0 for name in class_names}
+    for images, labels in train_ds:
+        for label in labels.numpy():
+            distribution[class_names[label]] += 1
+    for name, count in distribution.items():
+        print(f"{name}: {count}")
+
     
     plt.figure(figsize=(10, 10))
     for images, labels in train_ds.take(2):
@@ -76,7 +83,7 @@ with tf.device('/gpu:0'):
                   metrics=['accuracy'])
     
     #earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=5)
-    save_callback = tf.keras.callbacks.ModelCheckpoint("pneumonia.keras",save_freq='epoch',save_best_only=True)
+    save_callback = tf.keras.callbacks.ModelCheckpoint("pneumonia.keras",save_freq='epoch',save_best_only=True)    
 
     if fit:
         history = model.fit(
