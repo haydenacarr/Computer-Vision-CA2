@@ -111,7 +111,7 @@ with tf.device('/gpu:0'):
     model = tuner.hypermodel.build(best_hps)
     """
 
-    model = tf.keras.models.Sequential([
+    """model = tf.keras.models.Sequential([
         augmentation,
         Rescaling(1.0/255),
         Conv2D(48, (3,3), activation='relu', input_shape=(img_height, img_width, img_channels)),
@@ -124,7 +124,25 @@ with tf.device('/gpu:0'):
         Dense(384, activation='relu'),
         Dropout(0.2),
         Dense(num_classes, activation = 'softmax')
-        ])    
+        ]) """ 
+
+    base_model = tf.keras.applications.MobileNetV2(
+        input_shape=(img_height, img_width, img_channels),
+        include_top=False,
+        weights='imagenet' 
+    )
+    
+    base_model.trainable = False
+
+    model = tf.keras.models.Sequential([
+        augmentation,
+        Rescaling(1.0/255),
+        base_model, 
+        GlobalAveragePooling2D(), 
+        Dense(256, activation='relu'),
+        Dropout(0.2),
+        Dense(num_classes, activation='softmax')
+    ])  
 
     model.compile(loss='sparse_categorical_crossentropy',
                   optimizer=Adam(learning_rate=0.01),
