@@ -9,6 +9,8 @@ from keras.layers import Dense, Dropout, Flatten, Conv2D, GlobalAveragePooling2D
 from keras.optimizers import RMSprop,Adam
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.metrics import classification_report, confusion_matrix
+import seaborn as sns
 
 
 batch_size = 32
@@ -148,7 +150,7 @@ with tf.device('/gpu:0'):
                   optimizer=Adam(learning_rate=0.01),
                   metrics=['accuracy'])
 
-    #earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=5)
+    earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=5)
     save_callback = tf.keras.callbacks.ModelCheckpoint("pneumonia.keras",save_freq='epoch',save_best_only=True)    
 
     if fit:
@@ -156,7 +158,7 @@ with tf.device('/gpu:0'):
             train_ds,
             batch_size=batch_size,
             validation_data=val_ds,
-            callbacks=[save_callback],
+            callbacks=[save_callback, earlystop_callback],
             epochs=epochs)
     else:
         model = tf.keras.models.load_model("pneumonia.keras")
@@ -184,3 +186,13 @@ with tf.device('/gpu:0'):
             plt.title('Actual:' + class_names[labels[i].numpy()]+ '\nPredicted:{} {:.2f}%'.format(class_names[np.argmax(prediction)], 100 * np.max(prediction)))
             plt.axis("off")
     plt.show()
+
+    y_true = []
+    y_pred = []
+    for images, labels in test_ds:
+        preds = model.predict(images, verbose=0)
+        y_true.extend(labels.numpy())
+        y_pred.extend(np.argmax(preds, axis=1))
+
+    print("\nClassification Report:")
+    print(classification_report(y_true, y_pred, target_names=class_names))
