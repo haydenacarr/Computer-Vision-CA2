@@ -10,11 +10,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-batch_size = 12
+batch_size = 32
 num_classes = 3
-epochs = 8
-img_width = 128
-img_height = 128
+epochs = 20
+img_width = 256
+img_height = 256
 img_channels = 3
 fit = True #make fit false if you do not want to train the network again
 train_dir = 'chest_xray/train'
@@ -65,9 +65,9 @@ with tf.device('/gpu:0'):
 
     # augmentation code to make the data size bigger while keeping it fresh
     augmentation = tf.keras.Sequential([
-    tf.keras.layers.RandomFlip("horizontal"),
     tf.keras.layers.RandomRotation(0.1), 
     tf.keras.layers.RandomZoom(0.1),
+    tf.keras.layers.RandomFlip("horizontal"),
     ])
 
     #create model
