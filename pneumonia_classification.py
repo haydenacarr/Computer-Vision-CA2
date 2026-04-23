@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
+from tf_explain.core.grad_cam import GradCAM
 
 
 batch_size = 32
@@ -153,9 +154,11 @@ with tf.device('/gpu:0'):
     earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=5)
     save_callback = tf.keras.callbacks.ModelCheckpoint("pneumonia.keras",save_freq='epoch',save_best_only=True)    
 
+    weights = {0: 1.0, 1: 2.0, 2: 2.0}
     if fit:
         history = model.fit(
             train_ds,
+            class_weight=weights,
             batch_size=batch_size,
             validation_data=val_ds,
             callbacks=[save_callback, earlystop_callback],
@@ -196,3 +199,5 @@ with tf.device('/gpu:0'):
 
     print("\nClassification Report:")
     print(classification_report(y_true, y_pred, target_names=class_names))
+
+    
