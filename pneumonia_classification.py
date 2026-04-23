@@ -16,7 +16,7 @@ from tf_explain.core.grad_cam import GradCAM
 
 batch_size = 32
 num_classes = 3
-epochs = 20
+epochs = 8
 img_width = 256
 img_height = 256
 img_channels = 3
@@ -200,4 +200,12 @@ with tf.device('/gpu:0'):
     print("\nClassification Report:")
     print(classification_report(y_true, y_pred, target_names=class_names))
 
+    img = images[0].numpy()
+    data = (np.array([img]), None)
+
+    explainer = GradCAM()
+    grid = explainer.explain(data, model, class_index=1, layer_name="out_relu")
     
+    explainer.save(grid, ".", "grad_cam.png")
+    plt.imshow(grid)
+    plt.show()
