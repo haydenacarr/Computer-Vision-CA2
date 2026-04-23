@@ -71,6 +71,7 @@ with tf.device('/gpu:0'):
     tf.keras.layers.RandomFlip("horizontal"),
     ])
 
+    """
     def model_builder(hp):
         model = tf.keras.models.Sequential([
         augmentation,
@@ -94,8 +95,8 @@ with tf.device('/gpu:0'):
                   metrics=['accuracy'])
 
         return model
-    
-        
+    """ 
+    """
     tuner = kt.Hyperband(model_builder,
                      objective='val_accuracy',
                      max_epochs=10,
@@ -108,7 +109,27 @@ with tf.device('/gpu:0'):
     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
     
     model = tuner.hypermodel.build(best_hps)
-    
+    """
+
+    model = tf.keras.models.Sequential([
+        augmentation,
+        Rescaling(1.0/255),
+        Conv2D(48, (3,3), activation='relu', input_shape=(img_height, img_width, img_channels)),
+        MaxPooling2D(2,2),
+        Conv2D(64, (3,3), activation='relu'),
+        MaxPooling2D(2,2),
+        Conv2D(96, (3,3), activation='relu'),
+        MaxPooling2D(2,2),
+        GlobalAveragePooling2D(), 
+        Dense(384, activation='relu'),
+        Dropout(0.2),
+        Dense(num_classes, activation = 'softmax')
+        ])    
+
+    model.compile(loss='sparse_categorical_crossentropy',
+                  optimizer=Adam(learning_rate=0.01),
+                  metrics=['accuracy'])
+
     #earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=5)
     save_callback = tf.keras.callbacks.ModelCheckpoint("pneumonia.keras",save_freq='epoch',save_best_only=True)    
 
