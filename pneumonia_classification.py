@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import keras
+import keras_tuner as kt
 import tensorflow as tf
 from keras.datasets import mnist
 from keras.models import Sequential
@@ -70,25 +71,43 @@ with tf.device('/gpu:0'):
     tf.keras.layers.RandomFlip("horizontal"),
     ])
 
-    #create model
-    model = tf.keras.models.Sequential([
+    def model_builder(hp):
+        model = tf.keras.models.Sequential([
         augmentation,
         Rescaling(1.0/255),
-        Conv2D(16, (3,3), activation = 'relu', input_shape = (img_height,img_width, img_channels)),
+        Conv2D(hp.Int('conv_units_1', 16, 64, step=16), (3,3), activation = 'relu', input_shape = (img_height,img_width, img_channels)),
         MaxPooling2D(2,2),
-        Conv2D(32, (3,3), activation = 'relu'),
+        Conv2D(hp.Int('conv_units_2', 32, 128, step=32), kernel_size=(3,3), activation='relu'),
         MaxPooling2D(2,2),
-        Conv2D(32, (3,3), activation = 'relu'),
+        Conv2D(filters=hp.Int('conv_units_3', 32, 128, step=32), kernel_size=(3,3), activation='relu'),
         MaxPooling2D(2,2),
         GlobalAveragePooling2D(), # flatten multidimensional outputs into single dimension for input to dense fully connected layers
-        Dense(512, activation = 'relu'),
+        Dense(hp.Int('units', 128, 512, step=128), activation='relu'),
         Dropout(0.2),
         Dense(num_classes, activation = 'softmax')
-    ])
+        ])    
 
-    model.compile(loss='sparse_categorical_crossentropy',
-                  optimizer=Adam(),
+        hp_lr = hp.Choice('learning_rate', values=[1e-2, 1e-3, 1e-4])
+        
+        model.compile(loss='sparse_categorical_crossentropy',
+                  optimizer=Adam(learning_rate=hp_lr),
                   metrics=['accuracy'])
+
+        return model
+    
+        
+    tuner = kt.Hyperband(model_builder,
+                     objective='val_accuracy',
+                     max_epochs=10,
+                     factor=3,
+                     directory='my_dir',
+                     project_name='pneumonia_classification')
+
+    tuner.search(train_ds, validation_data=val_ds)
+
+    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+    
+    model = tuner.hypermodel.build(best_hps)
     
     #earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=5)
     save_callback = tf.keras.callbacks.ModelCheckpoint("pneumonia.keras",save_freq='epoch',save_best_only=True)    
